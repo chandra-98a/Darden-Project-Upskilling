@@ -1,19 +1,21 @@
 package net.javaguides.springboot.service.impl;
 
 import lombok.AllArgsConstructor;
+import net.javaguides.springboot.Exception.EmailAlreadyExistsException;
+import net.javaguides.springboot.Exception.ResourceNotFoundException;
 import net.javaguides.springboot.dto.UserDto;
 import net.javaguides.springboot.entity.User;
 import net.javaguides.springboot.mapper.AutoUserMapper;
-import net.javaguides.springboot.mapper.UserMapper;
+
 import net.javaguides.springboot.repository.UserRepository;
 import net.javaguides.springboot.service.UserService;
-import org.apache.logging.log4j.util.Strings;
+
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
+
 
 import java.util.List;
-import java.util.Objects;
+
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -29,9 +31,14 @@ public class UserServiceImpl implements UserService {
     public UserDto createUser(UserDto userDto) {
 
         // Convert UserDto into User JPA Entity
-       // User user = UserMapper.mapToUser(userDto);
+       // User  user= UserMapper.mapToUser(userDto);
 
         //User user = modelMapper.map(userDto, User.class);
+        Optional<User> optionalUser = userRepository.findByEmail(userDto.getEmail());
+
+        if(optionalUser.isPresent()){
+            throw new EmailAlreadyExistsException("Email Already Exists for User");
+        }
 
         User user = AutoUserMapper.MAPPER.mapToUser(userDto);
 
@@ -49,11 +56,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto getUserById(Long userId) {
-        Optional<User> optionalUser = userRepository.findById(userId);
-        User user = optionalUser.get();
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new ResourceNotFoundException("User", "id", userId)
+        );
+
         //return UserMapper.mapToUserDto(user);
         //return modelMapper.map(user, UserDto.class);
-        return AutoUserMapper.MAPPER.mapToUserDto(optionalUser.get());
+        return AutoUserMapper.MAPPER.mapToUserDto(user);
     }
 
     @Override
@@ -71,7 +80,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto updateUser(UserDto user) {
-        User existingUser = userRepository.findById(user.getId()).get();
+        User existingUser = userRepository.findById(user.getId()).orElseThrow(
+                () -> new ResourceNotFoundException("User", "id", user.getId())
+        );
         existingUser.setFirstName(user.getFirstName());
         existingUser.setLastName(user.getLastName());
         existingUser.setEmail(user.getEmail());
@@ -83,6 +94,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteUser(Long userId) {
+        User existingUser = userRepository.findById(userId).orElseThrow(
+                ()->new ResourceNotFoundException("User","id", userId)
+        );
         userRepository.deleteById(userId);
     }
 }
