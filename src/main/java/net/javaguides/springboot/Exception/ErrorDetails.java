@@ -17,4 +17,7 @@ public class ErrorDetails {
     private String message;
     private String path;
     private String errorCode;
+
+    public ErrorDetails(LocalDateTime now, String message, String description, String emailAlreadyExist) {
+    }
 }
